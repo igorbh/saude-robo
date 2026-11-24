@@ -10,7 +10,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Saúde do robô">
 <meta name="robots" content="noindex,nofollow">
-<link rel="manifest" href="manifest.json">
 <link rel="icon" href="icone-192.png">
 <link rel="apple-touch-icon" href="icone-180.png">
 <!--
@@ -72,13 +71,26 @@ const API = "https://vzdvlffphtmqhspgokmx.supabase.co/functions/v1/saude-robo";
 const GUARDA = "saude_robo_chave";
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const ler = () => { try { return localStorage.getItem(GUARDA); } catch { return null; } };
-const gravar = (v) => { try { v ? localStorage.setItem(GUARDA, v) : localStorage.removeItem(GUARDA); } catch {} };
+// iPhone/iPad: o ícone da Tela de Início tem memória própria (não vê o que o Safari guardou) e abre o endereço
+// que estava na tela ao adicionar. Por isso no iPhone a liberação fica no próprio endereço (#chave=...) e não há
+// manifest (com manifest o iPhone abriria o endereço "limpo"). No Android a memória é a mesma do Chrome.
+const IPHONE = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+let chaveNaMemoria = null; // vale mesmo se o aparelho não deixar guardar (janela dentro de outro app)
+const ler = () => { try { return localStorage.getItem(GUARDA) || chaveNaMemoria; } catch { return chaveNaMemoria; } };
+const gravar = (v) => { chaveNaMemoria = v; try { v ? localStorage.setItem(GUARDA, v) : localStorage.removeItem(GUARDA); } catch {} };
 
-// Link do Telegram traz #chave=...: guarda neste aparelho e limpa o endereço (a chave não fica à vista).
+if (!IPHONE) {
+  const l = document.createElement("link");
+  l.rel = "manifest"; l.href = "manifest.json";
+  document.head.appendChild(l);
+}
+// Link do Telegram traz #chave=...: guarda. Fora do iPhone limpa o endereço (a chave não fica à vista).
 {
   const m = location.hash.match(/chave=([^&]+)/);
-  if (m) { gravar(decodeURIComponent(m[1])); history.replaceState(null, "", location.pathname); }
+  if (m) {
+    gravar(decodeURIComponent(m[1]));
+    if (!IPHONE) history.replaceState(null, "", location.pathname);
+  }
 }
 
 function selo(cor, titulo, sub) {

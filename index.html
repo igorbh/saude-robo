@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Saúde do robô</title>
+<meta name="theme-color" content="#14181f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Saúde do robô">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icone-192.png">
+<link rel="apple-touch-icon" href="icone-180.png">
+<!--
+  Saúde do robô de atendimento da Autêntica Retrô (24/11/2026).
+  Esta página é só a MOLDURA: não tem dado nem senha. Os dados vêm da função saude-robo (só leitura)
+  e só aparecem num aparelho onde a chave foi guardada (link do Telegram com #chave=...).
+-->
+<style>
+:root{
+  --fundo:#f3f4f6;--cartao:#ffffff;--texto:#151a22;--suave:#5f6877;--borda:#e2e5ea;
+  --verde:#1f9d55;--amarelo:#d99a06;--vermelho:#d92d2d;--azul:#2563eb;
+}
+@media (prefers-color-scheme:dark){:root{--fundo:#0f1217;--cartao:#181d25;--texto:#e9ecf1;--suave:#9aa3b2;--borda:#283040;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--fundo);color:var(--texto);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding:calc(env(safe-area-inset-top,0px) + 14px) max(14px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 28px) max(14px,env(safe-area-inset-left,0px))}
+main{max-width:760px;margin:0 auto}
+.cabeca{display:flex;align-items:center;justify-content:space-between;gap:10px}
+h1{font-size:18px;margin:0;font-weight:650}
+.selo{border-radius:16px;padding:18px 16px;margin:12px 0 6px;color:#fff;background:var(--verde)}
+.selo.amarelo{background:var(--amarelo)}.selo.vermelho{background:var(--vermelho)}.selo.cinza{background:var(--suave)}
+.selo b{display:block;font-size:22px;line-height:1.2}
+.selo span{font-size:14px;opacity:.92}
+.botoes{display:flex;gap:10px;margin:12px 0}
+button{font:inherit;font-weight:600;border:0;border-radius:12px;padding:12px 14px;flex:1;cursor:pointer;background:var(--azul);color:#fff}
+button:disabled{opacity:.6}
+.cartao{background:var(--cartao);border:1px solid var(--borda);border-radius:14px;padding:12px 14px;margin:8px 0}
+.linha{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
+.linha::-webkit-details-marker{display:none}
+.bola{width:14px;height:14px;border-radius:50%;flex:none}
+.bola.verde{background:var(--verde)}.bola.amarelo{background:var(--amarelo)}.bola.vermelho{background:var(--vermelho)}
+.titulo{font-weight:600;flex:1;min-width:0}
+.seta{color:var(--suave);font-size:13px}
+details[open] .seta{transform:rotate(90deg)}
+.detalhe{color:var(--suave);font-size:14px;margin:8px 0 0 24px}
+ul{list-style:none;padding:0;margin:8px 0 0 24px;font-size:14px;color:var(--suave)}
+li{display:flex;gap:8px;margin:6px 0}li .bola{width:9px;height:9px;margin-top:6px}
+li b{color:var(--texto);font-weight:600}
+.aviso{background:var(--cartao);border:1px solid var(--borda);border-radius:14px;padding:16px;margin:14px 0;color:var(--suave)}
+.aviso b{color:var(--texto)}
+.rodape{color:var(--suave);font-size:13px;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<main>
+  <div class="cabeca"><h1>Saúde do robô</h1></div>
+  <div id="selo" class="selo cinza"><b>Carregando…</b><span>buscando as bolinhas</span></div>
+  <div class="botoes"><button id="agora">Conferir agora</button></div>
+  <div id="semChave" class="aviso" hidden>
+    <b>Este aparelho ainda não está liberado.</b><br>
+    Toque no link do painel que chega no grupo do Telegram (a mensagem do app). Ele libera este aparelho uma vez só.
+  </div>
+  <div id="lista"></div>
+  <p class="rodape">🟢 tudo certo · 🟡 vale olhar · 🔴 problema<br>O robô confere tudo a cada 15 min · esta tela atualiza a cada 1 min</p>
+</main>
+<script>
+const API = "https://vzdvlffphtmqhspgokmx.supabase.co/functions/v1/saude-robo";
+const GUARDA = "saude_robo_chave";
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const ler = () => { try { return localStorage.getItem(GUARDA); } catch { return null; } };
+const gravar = (v) => { try { v ? localStorage.setItem(GUARDA, v) : localStorage.removeItem(GUARDA); } catch {} };
+
+// Link do Telegram traz #chave=...: guarda neste aparelho e limpa o endereço (a chave não fica à vista).
+{
+  const m = location.hash.match(/chave=([^&]+)/);
+  if (m) { gravar(decodeURIComponent(m[1])); history.replaceState(null, "", location.pathname); }
+}
+
+function selo(cor, titulo, sub) {
+  $("selo").className = "selo " + cor;
+  $("selo").innerHTML = `<b>${esc(titulo)}</b><span>${esc(sub)}</span>`;
+}
+
+async function carregar(agora) {
+  const chave = ler();
+  if (!chave) { $("semChave").hidden = false; selo("cinza", "Aparelho não liberado", "toque no link do Telegram"); return; }
+  $("agora").disabled = true;
+  if (agora) selo("cinza", "Conferindo tudo agora…", "leva uns segundos");
+  try {
+    const r = await fetch(`${API}?acao=dados&chave=${encodeURIComponent(chave)}${agora ? "&agora=1" : ""}`, { cache: "no-store" });
+    const d = await r.json();
+    if (r.status === 403) { gravar(null); $("semChave").hidden = false; selo("cinza", "Link antigo", "toque no link mais recente do Telegram"); $("lista").innerHTML = ""; return; }
+    if (!r.ok) throw new Error(d.erro || `erro ${r.status}`);
+    $("semChave").hidden = true;
+    const cor = d.itens.some((i) => i.cor === "vermelho") ? "vermelho" : d.itens.some((i) => i.cor === "amarelo") ? "amarelo" : "verde";
+    selo(cor, d.geral.replace(/^\S+\s/, ""), `conferido às ${d.conferido_em ?? "—"}`);
+    $("lista").innerHTML = d.itens.map((i) => `
+      <details class="cartao" ${i.cor !== "verde" ? "open" : ""}>
+        <summary class="linha"><span class="bola ${i.cor}"></span><span class="titulo">${esc(i.titulo)}</span><span class="seta">▶</span></summary>
+        <p class="detalhe">${esc(i.detalhe)}${i.desde ? ` · assim desde ${esc(i.desde)}` : ""}</p>
+        ${i.partes.length ? `<ul>${i.partes.map((p) => `<li><span class="bola ${p.cor}"></span><span><b>${esc(p.nome)}</b> — ${esc(p.detalhe)}</span></li>`).join("")}</ul>` : ""}
+      </details>`).join("");
+  } catch (e) {
+    selo("cinza", "Sem conexão com o robô", "confira a internet e toque em Conferir agora");
+  } finally {
+    $("agora").disabled = false;
+  }
+}
+
+$("agora").onclick = () => carregar(true);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) carregar(false); });
+carregar(false);
+setInterval(() => { if (!document.hidden) carregar(false); }, 60000);
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

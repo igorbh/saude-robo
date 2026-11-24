@@ -1,0 +1,16 @@
+{
+  "name": "Saúde do robô — Autêntica Retrô",
+  "short_name": "Saúde do robô",
+  "description": "Bolinhas verdes, amarelas e vermelhas de cada parte do robô de atendimento.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14181f",
+  "theme_color": "#14181f",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
